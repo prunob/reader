@@ -13,11 +13,8 @@ import time
 def playmovie(video, directory, player):
     """Plays a video."""
     VIDEO_PATH = Path(directory + video)
-    isPlay = isplaying()
 
-    if not isPlay:
-        logging.info('playmovie: No videos playing, so play video.')
-    else:
+    if player.is_playing():
         logging.info('playmovie: Video already playing, so quit current video, then play')
         player.stop()
 
@@ -32,20 +29,9 @@ def playmovie(video, directory, player):
     return player
 
 
-def isplaying():
-    """Check if vlc is running
-    If the value returned is 1 or 0, vlc is NOT playing a video
-    If the value returned is 2, vlc is playing a video"""
-    processname = 'vlc'
-    tmp = os.popen("ps -Af").read()
-    proccount = tmp.count(processname)
-
-    if proccount == 1 or proccount == 0:
-        proccount = False
-    else:
-        proccount = True
-
-    return proccount
+def isplaying(player):
+    """Check if player is playing a video"""
+    return player.is_playing()
 
 
 def main():
@@ -64,6 +50,13 @@ def main():
 
     try:
         while True:
+            isPlay = isplaying(playerOB)
+            logging.debug("Movie Playing: %s" % isPlay)
+
+            if not isPlay:
+                current_movie_id = 555555555555
+                time.sleep(0.5)  # Ajout du délai de 500 ms entre chaque scan
+
             idd, movie_name = reader.read()
 
             logging.debug("+ ID: %s" % idd)
@@ -99,7 +92,7 @@ def main():
                     isMoviePlaying = True
 
             else:
-                isPlay = isplaying()
+                isPlay = isplaying(playerOB)
 
                 if isPlay:
                     if playerOB.is_playing():
