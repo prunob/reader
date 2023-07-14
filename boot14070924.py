@@ -1,167 +1,116 @@
 #!/usr/bin/python3
-from random import randint
+from random import randint	# Import randint function from random module
 from mfrc522 import SimpleMFRC522
 from vlc import Instance
 from pathlib import Path
-import time
 import os
 import logging
-import random
+import random	
 import glob
 import RPi.GPIO as GPIO
 
 
 def playmovie(video, directory, player):
+    """Plays a video."""
+    VIDEO_PATH = Path(directory + video)
+    isPlay = isplaying()
 
-	"""plays a video."""
+    if not isPlay:
+        logging.info('playmovie: No videos playing, so play video.')
+    else:
+        logging.info('playmovie: Video already playing, so quit current video, then play')
+        player.stop()
 
-	VIDEO_PATH = Path(directory + video)
+    try:	# Try to play video
+        player = Instance().media_player_new()
+        player.set_mrl(str(VIDEO_PATH))
+        player.play()
+    except SystemError:
+        logging.info('$Error: Cannot Find Video.')
 
-	isPlay = isplaying()
+    logging.info('playmovie: vlc %s' % video)
+    return player
 
-	if not isPlay:
-
-		logging.info(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())) + 'playmovie: No videos playing, so play video.')
-
-	else:
-
-		logging.info(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))+ 'playmovie: Video already playing, so quit current video, then play')
-		player.stop()
-
-	try:
-		player = Instance().media_player_new()
-		player.set_mrl(str(VIDEO_PATH))
-		player.play()
-	except SystemError:
-		logging.info(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())) + ' $Error: Cannot Find Video.')
-
-	logging.info('playmovie: vlc %s' % video)
-
-	time.sleep(2)
-
-	return player
 
 def isplaying():
+    """Check if vlc is running
+    If the value returned is 1 or 0, vlc is NOT playing a video
+    If the value returned is 2, vlc is playing a video"""
+    processname = 'vlc'	# Name of the process you want to check
+    tmp = os.popen("ps -Af").read()
+    proccount = tmp.count(processname)
 
-		"""check if vlc is running
-		if the value returned is a 1 or 0, vlc is NOT playing a video
-		if the value returned is a 2, vlc is playing a video"""
+    if proccount == 1 or proccount == 0:
+        proccount = False
+    else:
+        proccount = True
 
-		processname = 'vlc'
-		tmp = os.popen("ps -Af").read()
-		proccount = tmp.count(processname)
-
-		if proccount == 1 or proccount == 0:
-			proccount = False
-		else:
-			proccount = True
-
-		return proccount
+    return proccount
 
 
 def main():
+    # Program start
+    directory = '/media/pi/BILLYUSB1/'
+    logging.basicConfig(level=logging.DEBUG)
+    reader = SimpleMFRC522()	# Setup reader
+    current_movie_id = 111111222222
+    playerOB = ""
 
-	#program start
+    try:
+        while True:
+            isPlay = isplaying()
+            logging.debug("Movie Playing: %s" % isPlay)
 
-	directory = '/media/pi/BILLYUSB1/'
+            if not isPlay:
+                current_movie_id = 555555555555
 
-	LOG_FILENAME = '/tmp/bplay_%s.log' %time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())).replace(" ","_").replace(":","")
-	logging.basicConfig(filename=LOG_FILENAME,level=logging.DEBUG)
-	#logging.basicConfig(level=logging.DEBUG)
+            logging.info("Waiting for ID to be scanned")
 
-	reader = SimpleMFRC522()
+            idd, movie_name = reader.read()
 
-	logging.info("\n\n\n***** %s Begin Player****\n\n\n" %time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+            logging.debug("+ ID: %s" % idd)
+            logging.debug("+ Movie Name: %s" % movie_name)
 
-	current_movie_id = 111111222222
+            movie_name = movie_name.rstrip()
 
-	playerOB = ""
+            if current_movie_id != idd:
+                logging.info('New Movie')
+                logging.info("- ID: %s" % idd)
+                logging.info("- Name: %s" % movie_name)
 
-	try:
-		while True: 
+                if movie_name.endswith(('.mp4', '.avi', '.m4v','.mkv')):
+                    current_movie_id = idd
+                    logging.info("playing: vlc %s" % movie_name)
+                    playerOB = playmovie(movie_name, directory, playerOB)
+                    
+                elif 'folder' in movie_name:
+                    current_movie_id = idd
+                    movie_directory = movie_name.replace('folder', '')
+                    
+                    try:
+                        movie_name = random.choice(glob.glob(os.path.join(directory + movie_directory, '*')))
+                        movie_name = movie_name.replace(directory, "")
+                        direc = directory
+                    except IndexError:
+                        movie_name = 'videonotfound.mp4'
+                        direc = 'home/bruno/'
 
-			isPlay = isplaying()
-			logging.debug(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())) + " Movie Playing: %s" % isPlay)
+                    logging.info("randomly selected: vlc %s" % movie_name)
+                    playerOB = playmovie(movie_name, direc, playerOB)
 
-			if not isPlay:
+            else:
+                isPlay = isplaying()
 
-				current_movie_id = 555555555555
-				
-			start_time = time.time()
-			logging.debug('start_time0: %s' %start_time)
+                if isPlay:
+                    if playerOB.is_playing():
+                        playerOB.pause()
+                    else:
+                        playerOB.play()
 
-			logging.debug(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())) + " Waiting for ID to be scanned")
-			
-			temp_time = time.time()
-			logging.info(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())) + " #READER
-idd, movie_name = reader.read()
+    except KeyboardInterrupt:
+        GPIO.cleanup()
+        print("\nAll Done")
 
-			temp_time = time.time() - temp_time
-			logging.info(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())) + " #READER AFTER - ELAPSED TIME %s" %temp_time)
-
-logging.debug(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())) + " + ID: %s" % idd)
-			logging.debug(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())) + " + Movie Name: %s" % movie_name)
-
-			movie_name = movie_name.rstrip()
-
-			if current_movie_id != idd:
-
-				logging.info(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())) + ' New Movie')
-				logging.info(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())) + " - ID: %s" % idd)
-				logging.info(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())) + " - Name: %s" % movie_name)
-				#this is a check in place to prevent vlc from restarting video if ID is left over the reader.
-				#better to use id than movie_name as there can be a problem reading movie_name occasionally
-				
-
-				if movie_name.endswith(('.mp4', '.avi', '.m4v','.mkv')):
-					current_movie_id = idd 	#we set this here instead of above bc it may mess up on first read
-					logging.info(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())) + " playing: vlc %s" % movie_name)
-					
-					playerOB = playmovie(movie_name,directory,playerOB)
-					
-
-				elif 'folder' in movie_name:
-					current_movie_id = idd
-					movie_directory = movie_name.replace('folder',"") 
-					
-					try:
-
-						movie_name = random.choice(glob.glob(os.path.join(directory + movie_directory, '*')))
-						movie_name = movie_name.replace(directory,"")
-						direc = directory
-					except IndexError:
-						movie_name = 'videonotfound.mp4'
-						direc = 'home/bruno/'
-
-					logging.info(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())) + " randomly selected: vlc %s" % movie_name)
-					playerOB = playmovie(movie_name,direc,playerOB)
-
-
-			else:
-
-				end_time = time.time()
-				elapsed_time = end_time - start_time
-
-				logging.debug('end_time: %s' %end_time)
-				logging.debug('start_time1: %s' %start_time)
-
-				isPlay = isplaying()
-
-				if isPlay:
-
-					if elapsed_time > 0.6 and elapsed_time < 8:
-						#pause, unpause movie
-						logging.info(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())) + " PLAY/PAUSE %s" %elapsed_time)
-						if playerOB.is_playing():
-							playerOB.pause()
-						else:
-							playerOB.play()
-
-
-	except KeyboardInterrupt:
-		GPIO.cleanup()
-		print("\nAll Done")
 
 if __name__ == '__main__':
-	
-	main()
+    main()
