@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+/#!/usr/bin/python3
 from random import randint
 from mfrc522 import SimpleMFRC522
 from vlc import Instance
@@ -50,7 +50,7 @@ def isplaying():
 
 def main():
     # Program start
-    directory = '/media/pi/BILLYUSB1/'
+    directory = '/home/bruno/'
     logging.basicConfig(level=logging.DEBUG)
     reader = SimpleMFRC522()	# Setup reader
     logging.info('\n\n\n***** %s Begin Player****\n\n\n' % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
