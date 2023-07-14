@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from random import randint	# Import randint function from random module
+from random import randint
 from mfrc522 import SimpleMFRC522
 from vlc import Instance
 from pathlib import Path
@@ -8,7 +8,7 @@ import logging
 import random	
 import glob
 import RPi.GPIO as GPIO
-
+import time
 
 def playmovie(video, directory, player):
     """Plays a video."""
@@ -21,7 +21,7 @@ def playmovie(video, directory, player):
         logging.info('playmovie: Video already playing, so quit current video, then play')
         player.stop()
 
-    try:	# Try to play video
+    try:
         player = Instance().media_player_new()
         player.set_mrl(str(VIDEO_PATH))
         player.play()
@@ -36,7 +36,7 @@ def isplaying():
     """Check if vlc is running
     If the value returned is 1 or 0, vlc is NOT playing a video
     If the value returned is 2, vlc is playing a video"""
-    processname = 'vlc'	# Name of the process you want to check
+    processname = 'vlc'
     tmp = os.popen("ps -Af").read()
     proccount = tmp.count(processname)
 
@@ -50,9 +50,10 @@ def isplaying():
 
 def main():
     # Program start
-    directory = '/home/bruno/'
+    directory = '/media/pi/BILLYUSB1/'
     logging.basicConfig(level=logging.DEBUG)
     reader = SimpleMFRC522()	# Setup reader
+    logging.info('\n\n\n***** %s Begin Player****\n\n\n' % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
     current_movie_id = 111111222222
     playerOB = ""
 
@@ -63,8 +64,7 @@ def main():
 
             if not isPlay:
                 current_movie_id = 555555555555
-
-            logging.info("Waiting for ID to be scanned")
+                time.sleep(0.5)  # Ajout du délai de 500 ms entre chaque scan
 
             idd, movie_name = reader.read()
 
@@ -82,11 +82,11 @@ def main():
                     current_movie_id = idd
                     logging.info("playing: vlc %s" % movie_name)
                     playerOB = playmovie(movie_name, directory, playerOB)
-                    
+
                 elif 'folder' in movie_name:
                     current_movie_id = idd
                     movie_directory = movie_name.replace('folder', '')
-                    
+
                     try:
                         movie_name = random.choice(glob.glob(os.path.join(directory + movie_directory, '*')))
                         movie_name = movie_name.replace(directory, "")
@@ -106,6 +106,8 @@ def main():
                         playerOB.pause()
                     else:
                         playerOB.play()
+
+                time.sleep(0.5)  # Ajout du délai de 500 ms après la lecture du RFID
 
     except KeyboardInterrupt:
         GPIO.cleanup()
