@@ -13,13 +13,6 @@ import time
 def playmovie(video, directory, player):
     """Plays a video."""
     VIDEO_PATH = Path(directory + video)
-    isPlay = isplaying()
-
-    if not isPlay:
-        logging.info('playmovie: No videos playing, so play video.')
-    else:
-        logging.info('playmovie: Video already playing, so quit current video, then play')
-        player.stop()
 
     try:
         player = Instance().media_player_new()
@@ -60,13 +53,6 @@ def main():
 
     try:
         while True:
-            isPlay = isplaying()
-            logging.debug("Movie Playing: %s" % isPlay)
-
-            if not isPlay:
-                current_movie_id = 555555555555
-                time.sleep(0.5)  # Ajout du délai de 500 ms entre chaque scan
-
             idd, movie_name = reader.read()
 
             logging.debug("+ ID: %s" % idd)
@@ -80,41 +66,36 @@ def main():
                 logging.info("- Name: %s" % movie_name)
 
                 if movie_name.endswith(('.mp4', '.avi', '.m4v','.mkv')):
-                    if not isMoviePlaying:
-                        current_movie_id = idd
-                        logging.info("playing: vlc %s" % movie_name)
-                        playerOB = playmovie(movie_name, directory, playerOB)
-                        isMoviePlaying = True
-                    else:
-                        logging.info("Movie already playing, ignore new request")
+                    current_movie_id = idd
+                    logging.info("playing: vlc %s" % movie_name)
+                    if playerOB:  # If there is a current movie, stop it
+                        playerOB.stop()
+                    playerOB = playmovie(movie_name, directory, playerOB)
+                    isMoviePlaying = True
 
                 elif 'folder' in movie_name:
-                    if not isMoviePlaying:
-                        current_movie_id = idd
-                        movie_directory = movie_name.replace('folder', '')
+                    current_movie_id = idd
+                    movie_directory = movie_name.replace('folder', '')
 
-                        try:
-                            movie_name = random.choice(glob.glob(os.path.join(directory + movie_directory, '*')))
-                            movie_name = movie_name.replace(directory, "")
-                            direc = directory
-                        except IndexError:
-                            movie_name = 'videonotfound.mp4'
-                            direc = 'media/usb/'
+                    try:
+                        movie_name = random.choice(glob.glob(os.path.join(directory + movie_directory, '*')))
+                        movie_name = movie_name.replace(directory, "")
+                        direc = directory
+                    except IndexError:
+                        movie_name = 'videonotfound.mp4'
+                        direc = 'media/usb/'
 
-                        logging.info("randomly selected: vlc %s" % movie_name)
-                        playerOB = playmovie(movie_name, direc, playerOB)
-                        isMoviePlaying = True
-                    else:
-                        logging.info("Movie already playing, ignore new request")
+                    logging.info("randomly selected: vlc %s" % movie_name)
+                    if playerOB:  # If there is a current movie, stop it
+                        playerOB.stop()
+                    playerOB = playmovie(movie_name, direc, playerOB)
+                    isMoviePlaying = True
 
             else:
-                isPlay = isplaying()
-
-                if isPlay:
-                    if playerOB.is_playing():
-                        playerOB.pause()
-                    else:
-                        playerOB.play()
+                if playerOB.is_playing():
+                    playerOB.pause()
+                else:
+                    playerOB.play()
 
                 time.sleep(0.5)  # Ajout du délai de 500 ms après la lecture du RFID
 
