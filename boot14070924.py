@@ -50,7 +50,7 @@ def isplaying():
 
 def main():
     # Program start
-    directory = '/media/pi/BILLYUSB1/'
+    directory = '/home/bruno/'
     logging.basicConfig(level=logging.DEBUG)
     reader = SimpleMFRC522()	# Setup reader
     current_movie_id = 111111222222
