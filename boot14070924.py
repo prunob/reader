@@ -50,7 +50,7 @@ def isplaying():
 
 def main():
     # Program start
-    directory = '/home/bruno/'
+    directory = '/media/usb'
     logging.basicConfig(level=logging.DEBUG)
     reader = SimpleMFRC522()	# Setup reader
     logging.info('\n\n\n***** %s Begin Player****\n\n\n' % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
@@ -93,7 +93,7 @@ def main():
                         direc = directory
                     except IndexError:
                         movie_name = 'videonotfound.mp4'
-                        direc = 'home/bruno/'
+                        direc = 'media/usb'
 
                     logging.info("randomly selected: vlc %s" % movie_name)
                     playerOB = playmovie(movie_name, direc, playerOB)
