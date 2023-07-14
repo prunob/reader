@@ -9,14 +9,9 @@ import random
 import glob
 import RPi.GPIO as GPIO
 import time
-import pygame  # Import the pygame library
-
-# The path to the image you want to display
-IMAGE_PATH = "/media/usb/boot.jpg"
 
 def playmovie(video, directory, player):
     """Plays a video."""
-    pygame.quit()  # Close the image
     VIDEO_PATH = Path(directory + video)
     isPlay = isplaying()
 
@@ -36,8 +31,11 @@ def playmovie(video, directory, player):
     logging.info('playmovie: vlc %s' % video)
     return player
 
+
 def isplaying():
-    """Check if vlc is running."""
+    """Check if vlc is running
+    If the value returned is 1 or 0, vlc is NOT playing a video
+    If the value returned is 2, vlc is playing a video"""
     processname = 'vlc'
     tmp = os.popen("ps -Af").read()
     proccount = tmp.count(processname)
@@ -49,34 +47,23 @@ def isplaying():
 
     return proccount
 
-def display_image_pygame(image_path):
-    """Displays an image fullscreen using pygame."""
-    pygame.init()
-    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-    img = pygame.image.load(image_path)
-    screen.blit(img, (0, 0))
-    pygame.display.flip()
 
 def main():
+    # Program start
     directory = '/media/usb/'
     logging.basicConfig(level=logging.DEBUG)
-    reader = SimpleMFRC522()
+    reader = SimpleMFRC522()	# Setup reader
     logging.info('\n\n\n***** %s Begin Player****\n\n\n' % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
     current_movie_id = 111111222222
-    playerOB = ""
+    playerOB = Instance().media_player_new()
     isMoviePlaying = False
 
-    display_image_pygame(IMAGE_PATH)  # Display the image
+    # Play boot.mkv at start
+    playerOB = playmovie("boot.mkv", directory, playerOB)
+    isMoviePlaying = True
 
     try:
         while True:
-            isPlay = isplaying()
-            logging.debug("Movie Playing: %s" % isPlay)
-
-            if not isPlay:
-                current_movie_id = 555555555555
-                time.sleep(0.5)  # Ajout du délai de 500 ms entre chaque scan
-
             idd, movie_name = reader.read()
 
             logging.debug("+ ID: %s" % idd)
@@ -85,11 +72,16 @@ def main():
             movie_name = movie_name.rstrip()
 
             if current_movie_id != idd:
-                current_movie_id = idd
+                logging.info('New Movie')
+                logging.info("- ID: %s" % idd)
+                logging.info("- Name: %s" % movie_name)
+
                 if movie_name.endswith(('.mp4', '.avi', '.m4v','.mkv')):
+                    current_movie_id = idd
                     logging.info("playing: vlc %s" % movie_name)
                     playerOB = playmovie(movie_name, directory, playerOB)
                     isMoviePlaying = True
+
                 elif 'folder' in movie_name:
                     current_movie_id = idd
                     movie_directory = movie_name.replace('folder', '')
@@ -105,6 +97,7 @@ def main():
                     logging.info("randomly selected: vlc %s" % movie_name)
                     playerOB = playmovie(movie_name, direc, playerOB)
                     isMoviePlaying = True
+
             else:
                 isPlay = isplaying()
 
@@ -116,13 +109,13 @@ def main():
 
                 time.sleep(0.5)  # Ajout du délai de 500 ms après la lecture du RFID
 
+                # Vérifier si la lecture du film est terminée
                 if isMoviePlaying and not playerOB.is_playing():
                     isMoviePlaying = False
                     current_movie_id = 0
                     logging.info("Movie playback finished")
 
     except KeyboardInterrupt:
-        pygame.quit()  # Make sure Pygame quits when the script is stopped
         GPIO.cleanup()
         print("\nAll Done")
 
