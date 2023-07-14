@@ -112,3 +112,22 @@ def main():
 
                 if isPlay:
                     if playerOB.is_playing():
+                        playerOB.pause()
+                    else:
+                        playerOB.play()
+
+                time.sleep(0.5)  # Ajout du délai de 500 ms après la lecture du RFID
+
+                # Vérifier si la lecture du film est terminée
+                if isMoviePlaying and not playerOB.is_playing():
+                    isMoviePlaying = False
+                    current_movie_id = 0
+                    logging.info("Movie playback finished")
+
+    except KeyboardInterrupt:
+        GPIO.cleanup()
+        print("\nAll Done")
+
+
+if __name__ == '__main__':
+    main()
