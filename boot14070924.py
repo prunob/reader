@@ -1,4 +1,4 @@
-/#!/usr/bin/python3
+#!/usr/bin/python3
 from random import randint
 from mfrc522 import SimpleMFRC522
 from vlc import Instance
