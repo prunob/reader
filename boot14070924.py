@@ -56,6 +56,7 @@ def main():
     logging.info('\n\n\n***** %s Begin Player****\n\n\n' % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
     current_movie_id = 111111222222
     playerOB = ""
+    isMoviePlaying = False
 
     try:
         while True:
@@ -79,40 +80,35 @@ def main():
                 logging.info("- Name: %s" % movie_name)
 
                 if movie_name.endswith(('.mp4', '.avi', '.m4v','.mkv')):
-                    current_movie_id = idd
-                    logging.info("playing: vlc %s" % movie_name)
-                    playerOB = playmovie(movie_name, directory, playerOB)
+                    if not isMoviePlaying:
+                        current_movie_id = idd
+                        logging.info("playing: vlc %s" % movie_name)
+                        playerOB = playmovie(movie_name, directory, playerOB)
+                        isMoviePlaying = True
+                    else:
+                        logging.info("Movie already playing, ignore new request")
 
                 elif 'folder' in movie_name:
-                    current_movie_id = idd
-                    movie_directory = movie_name.replace('folder', '')
+                    if not isMoviePlaying:
+                        current_movie_id = idd
+                        movie_directory = movie_name.replace('folder', '')
 
-                    try:
-                        movie_name = random.choice(glob.glob(os.path.join(directory + movie_directory, '*')))
-                        movie_name = movie_name.replace(directory, "")
-                        direc = directory
-                    except IndexError:
-                        movie_name = 'videonotfound.mp4'
-                        direc = 'media/usb/'
+                        try:
+                            movie_name = random.choice(glob.glob(os.path.join(directory + movie_directory, '*')))
+                            movie_name = movie_name.replace(directory, "")
+                            direc = directory
+                        except IndexError:
+                            movie_name = 'videonotfound.mp4'
+                            direc = 'media/usb/'
 
-                    logging.info("randomly selected: vlc %s" % movie_name)
-                    playerOB = playmovie(movie_name, direc, playerOB)
+                        logging.info("randomly selected: vlc %s" % movie_name)
+                        playerOB = playmovie(movie_name, direc, playerOB)
+                        isMoviePlaying = True
+                    else:
+                        logging.info("Movie already playing, ignore new request")
 
             else:
                 isPlay = isplaying()
 
                 if isPlay:
                     if playerOB.is_playing():
-                        playerOB.pause()
-                    else:
-                        playerOB.play()
-
-                time.sleep(0.5)  # Ajout du délai de 500 ms après la lecture du RFID
-
-    except KeyboardInterrupt:
-        GPIO.cleanup()
-        print("\nAll Done")
-
-
-if __name__ == '__main__':
-    main()
