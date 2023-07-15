@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import os
 import subprocess
-os.environ['AOUT'] = 'pulse'  # Définit la variable d'environnement pour utiliser PulseAudio
+os.environ['AOUT'] = 'alsa'  # Définit la variable d'environnement pour utiliser PulseAudio
 
 from random import randint
 from mfrc522 import SimpleMFRC522
@@ -27,7 +27,7 @@ def playmovie(video, directory, player):
 
     try:
         # Launch VLC with desired options
-        subprocess.Popen(['vlc', '--aout=pulse', str(VIDEO_PATH)])
+        subprocess.Popen(['vlc', '--aout=alsa', str(VIDEO_PATH)])
     except Exception as e:
         player = Instance('--aout=pulse').media_player_new() # Change here
         player = Instance().media_player_new()  # Change back here
@@ -48,7 +48,7 @@ def main():
     reader = SimpleMFRC522()   # Setup reader
     logging.info('\n\n\n***** %s Begin Player****\n\n\n' % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
     current_movie_id = 111111222222
-    playerOB = Instance('--aout=pulse').media_player_new()  # Change here
+    playerOB = Instance('--aout=alsa').media_player_new()  # Change here
     playerOB = Instance().media_player_new()  # Change back here
     isMoviePlaying = False
 
