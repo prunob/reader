@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 from random import randint
 from mfrc522 import SimpleMFRC522
-from vlc import Instance
 from pathlib import Path
 import os
 import logging
@@ -10,51 +9,34 @@ import random
 import glob
 import RPi.GPIO as GPIO
 import time
-def playmovie(video, directory, player):
-    """Plays a video."""
-    VIDEO_PATH = Path(directory + video)
-    if player.is_playing():
-        logging.info('playmovie: Video already playing, so quit current video, then play')
-        player.stop()
+import subprocess
 
-    try:
-        player = Instance().media_player_new()
-        player = Instance('--aout=pulse').media_player_new() # Change here
-        player.set_mrl(str(VIDEO_PATH))
-        player.play()
-    except SystemError:
-        logging.info('$Error: Cannot Find Video.')
-    logging.info('playmovie: vlc %s' % video)
+def playmovie(video, directory):
+    """Plays a video."""
+    VIDEO_PATH = directory + video
+    player = subprocess.Popen(["omxplayer", VIDEO_PATH], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return player
 
-
-def isplaying(player):
+def is_playing(player):
     """Check if player is playing a video"""
-    return player.is_playing()
-
+    # Returns False if the process has terminated, True otherwise
+    return player.poll() is None
 
 def main():
     # Program start
     directory = '/media/usb/'
     logging.basicConfig(level=logging.DEBUG)
-    reader = SimpleMFRC522()	# Setup reader
     reader = SimpleMFRC522()   # Setup reader
     logging.info('\n\n\n***** %s Begin Player****\n\n\n' % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
     current_movie_id = 111111222222
-    playerOB = Instance().media_player_new()
-    playerOB = Instance('--aout=pulse').media_player_new()  # Change here
-    isMoviePlaying = False
-
-    # Play boot.mkv at start
-    playerOB = playmovie("boot.mkv", directory, playerOB)
-    isMoviePlaying = True
+    player = playmovie("boot.mkv", directory)  # Play boot.mkv at start
     try:
         while True:
-            isPlay = isplaying(playerOB)
+            isPlay = is_playing(player)
             logging.debug("Movie Playing: %s" % isPlay)
             if not isPlay:
                 current_movie_id = 555555555555
-                time.sleep(0.5)  # Ajout du délai de 500 ms entre chaque scan
+                time.sleep(0.5)  # Delay of 500 ms between each scan
             idd, movie_name = reader.read()
             logging.debug("+ ID: %s" % idd)
             logging.debug("+ Movie Name: %s" % movie_name)
@@ -65,33 +47,29 @@ def main():
                 logging.info("- Name: %s" % movie_name)
                 if movie_name.endswith(('.mp4', '.avi', '.m4v','.mkv')):
                     current_movie_id = idd
-                    logging.info("playing: vlc %s" % movie_name)
-                    playerOB = playmovie(movie_name, directory, playerOB)
-                    isMoviePlaying = True
+                    logging.info("playing: omxplayer %s" % movie_name)
+                    player = playmovie(movie_name, directory)
                 elif 'folder' in movie_name:
                     current_movie_id = idd
                     movie_directory = movie_name.replace('folder', '')
                     try:
                         movie_name = random.choice(glob.glob(os.path.join(directory + movie_directory, '*')))
                         movie_name = movie_name.replace(directory, "")
-                        direc = directory
                     except IndexError:
                         movie_name = 'videonotfound.mp4'
-                        direc = 'media/usb/'
-                    logging.info("randomly selected: vlc %s" % movie_name)
-                    playerOB = playmovie(movie_name, direc, playerOB)
-                    isMoviePlaying = True
+                    logging.info("randomly selected: omxplayer %s" % movie_name)
+                    player = playmovie(movie_name, directory)
             else:
-                isPlay = isplaying(playerOB)
+                isPlay = is_playing(player)
                 if isPlay:
-                    if playerOB.is_playing():
-                        playerOB.pause()
-                    else:
-                        playerOB.play()
-                time.sleep(0.5)  # Ajout du délai de 500 ms après la lecture du RFID
-                # Vérifier si la lecture du film est terminée
-                if isMoviePlaying and not playerOB.is_playing():
-                    isMoviePlaying = False
+                    player.stdin.write(b'p')  # pause
+                    player.stdin.flush()
+                    time.sleep(0.5)
+                    player.stdin.write(b'p')  # play
+                    player.stdin.flush()
+                time.sleep(0.5)  # Delay of 500 ms after RFID read
+                # Check if movie playback is finished
+                if isPlay and not is_playing(player):
                     current_movie_id = 0
                     logging.info("Movie playback finished")
     except KeyboardInterrupt:
