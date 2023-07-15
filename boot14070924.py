@@ -5,7 +5,7 @@ from vlc import Instance
 from pathlib import Path
 import os
 import logging
-import random	
+import random   
 import glob
 import RPi.GPIO as GPIO
 import time
@@ -19,7 +19,7 @@ def playmovie(video, directory, player):
         player.stop()
 
     try:
-        player = Instance().media_player_new()
+        player = Instance('--aout=pulse').media_player_new() # Change here
         player.set_mrl(str(VIDEO_PATH))
         player.play()
     except SystemError:
@@ -28,20 +28,18 @@ def playmovie(video, directory, player):
     logging.info('playmovie: vlc %s' % video)
     return player
 
-
 def isplaying(player):
     """Check if player is playing a video"""
     return player.is_playing()
-
 
 def main():
     # Program start
     directory = '/media/usb/'
     logging.basicConfig(level=logging.DEBUG)
-    reader = SimpleMFRC522()	# Setup reader
+    reader = SimpleMFRC522()   # Setup reader
     logging.info('\n\n\n***** %s Begin Player****\n\n\n' % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
     current_movie_id = 111111222222
-    playerOB = Instance().media_player_new()
+    playerOB = Instance('--aout=pulse').media_player_new()  # Change here
     isMoviePlaying = False
 
     # Play boot.mkv at start
@@ -111,7 +109,6 @@ def main():
     except KeyboardInterrupt:
         GPIO.cleanup()
         print("\nAll Done")
-
 
 if __name__ == '__main__':
     main()
