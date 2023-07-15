@@ -1,9 +1,11 @@
 #!/usr/bin/python3
+import os
+os.environ['AOUT'] = 'pulse'  # Définit la variable d'environnement pour utiliser PulseAudio
+
 from random import randint
 from mfrc522 import SimpleMFRC522
 from vlc import Instance
 from pathlib import Path
-import os
 import logging
 import random   
 import glob
@@ -19,7 +21,7 @@ def playmovie(video, directory, player):
         player.stop()
 
     try:
-        player = Instance('--aout=pulse').media_player_new() # Change here
+        player = Instance().media_player_new()  # Change back here
         player.set_mrl(str(VIDEO_PATH))
         player.play()
     except SystemError:
@@ -39,7 +41,7 @@ def main():
     reader = SimpleMFRC522()   # Setup reader
     logging.info('\n\n\n***** %s Begin Player****\n\n\n' % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
     current_movie_id = 111111222222
-    playerOB = Instance('--aout=pulse').media_player_new()  # Change here
+    playerOB = Instance().media_player_new()  # Change back here
     isMoviePlaying = False
 
     # Play boot.mkv at start
@@ -109,6 +111,7 @@ def main():
     except KeyboardInterrupt:
         GPIO.cleanup()
         print("\nAll Done")
+
 
 if __name__ == '__main__':
     main()
