@@ -11,6 +11,7 @@ import random
 import glob
 import RPi.GPIO as GPIO
 import time
+import vlc
 
 def playmovie(video, directory, player):
     """Plays a video."""
@@ -20,12 +21,11 @@ def playmovie(video, directory, player):
         player.stop()
 
     try:
-        player = cvlc.Instance('--aout=pulse').media_player_new()  # Change here
-        player.set_mrl(str(VIDEO_PATH))
+        player.set_media(vlc.Media(str(VIDEO_PATH)))
         player.play()
     except SystemError:
         logging.info('$Error: Cannot Find Video.')
-    logging.info('playmovie: cvlc %s' % video)
+    logging.info('playmovie: vlc %s' % video)
     return player
 
 def isplaying(player):
@@ -39,7 +39,7 @@ def main():
     reader = SimpleMFRC522()   # Setup reader
     logging.info('\n\n\n***** %s Begin Player****\n\n\n' % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
     current_movie_id = 111111222222
-    playerOB = cvlc.Instance('--aout=pulse').media_player_new()  # Change here
+    playerOB = vlc.MediaPlayer('--aout=pulse')  # Change here
     isMoviePlaying = False
 
     # Play boot.mkv at start
@@ -63,7 +63,7 @@ def main():
                 logging.info("- Name: %s" % movie_name)
                 if movie_name.endswith(('.mp4', '.avi', '.m4v','.mkv')):
                     current_movie_id = idd
-                    logging.info("playing: cvlc %s" % movie_name)
+                    logging.info("playing: vlc %s" % movie_name)
                     playerOB = playmovie(movie_name, directory, playerOB)
                     isMoviePlaying = True
                 elif 'folder' in movie_name:
@@ -76,7 +76,7 @@ def main():
                     except IndexError:
                         movie_name = 'videonotfound.mp4'
                         direc = 'media/usb/'
-                    logging.info("randomly selected: cvlc %s" % movie_name)
+                    logging.info("randomly selected: vlc %s" % movie_name)
                     playerOB = playmovie(movie_name, direc, playerOB)
                     isMoviePlaying = True
             else:
