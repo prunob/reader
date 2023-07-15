@@ -4,7 +4,6 @@ os.environ['AOUT'] = 'pulse'  # Définit la variable d'environnement pour utilis
 
 from random import randint
 from mfrc522 import SimpleMFRC522
-from vlc import Instance
 from pathlib import Path
 import os
 import logging
@@ -12,6 +11,7 @@ import random
 import glob
 import RPi.GPIO as GPIO
 import time
+
 def playmovie(video, directory, player):
     """Plays a video."""
     VIDEO_PATH = Path(directory + video)
@@ -20,17 +20,18 @@ def playmovie(video, directory, player):
         player.stop()
 
     try:
-        player = Instance('--aout=pulse').media_player_new() # Change here
-        player = Instance().media_player_new()  # Change back here
+        player = cvlc.Instance('--aout=pulse').media_player_new()  # Change here
         player.set_mrl(str(VIDEO_PATH))
         player.play()
     except SystemError:
         logging.info('$Error: Cannot Find Video.')
-    logging.info('playmovie: vlc %s' % video)
+    logging.info('playmovie: cvlc %s' % video)
     return player
+
 def isplaying(player):
     """Check if player is playing a video"""
     return player.is_playing()
+
 def main():
     # Program start
     directory = '/media/usb/'
@@ -38,13 +39,13 @@ def main():
     reader = SimpleMFRC522()   # Setup reader
     logging.info('\n\n\n***** %s Begin Player****\n\n\n' % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
     current_movie_id = 111111222222
-    playerOB = Instance('--aout=pulse').media_player_new()  # Change here
-    playerOB = Instance().media_player_new()  # Change back here
+    playerOB = cvlc.Instance('--aout=pulse').media_player_new()  # Change here
     isMoviePlaying = False
 
     # Play boot.mkv at start
     playerOB = playmovie("boot.mkv", directory, playerOB)
     isMoviePlaying = True
+
     try:
         while True:
             isPlay = isplaying(playerOB)
@@ -62,7 +63,7 @@ def main():
                 logging.info("- Name: %s" % movie_name)
                 if movie_name.endswith(('.mp4', '.avi', '.m4v','.mkv')):
                     current_movie_id = idd
-                    logging.info("playing: vlc %s" % movie_name)
+                    logging.info("playing: cvlc %s" % movie_name)
                     playerOB = playmovie(movie_name, directory, playerOB)
                     isMoviePlaying = True
                 elif 'folder' in movie_name:
@@ -75,7 +76,7 @@ def main():
                     except IndexError:
                         movie_name = 'videonotfound.mp4'
                         direc = 'media/usb/'
-                    logging.info("randomly selected: vlc %s" % movie_name)
+                    logging.info("randomly selected: cvlc %s" % movie_name)
                     playerOB = playmovie(movie_name, direc, playerOB)
                     isMoviePlaying = True
             else:
