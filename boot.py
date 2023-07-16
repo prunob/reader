@@ -10,8 +10,6 @@ import glob
 import RPi.GPIO as GPIO
 import time
 
-os.environ["DISPLAY"] = ":0"
-
 def playmovie(video, directory, player):
     """Plays a video."""
     VIDEO_PATH = Path(directory + video)
