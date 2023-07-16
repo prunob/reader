@@ -1,4 +1,10 @@
 #!/usr/bin/python3
+
+import os
+os.environ["PULSE_SERVER"] = "/run/user/1000/pulse/native"
+os.environ["PULSE_COOKIE"] = "/home/pi/.config/pulse/cookie"
+os.environ["DISPLAY"] = ":0"
+
 from random import randint
 from mfrc522 import SimpleMFRC522
 from vlc import Instance
