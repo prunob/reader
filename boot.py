@@ -5,21 +5,22 @@ from vlc import Instance
 from pathlib import Path
 import os
 import logging
-import random	
+import random   
 import glob
 import RPi.GPIO as GPIO
 import time
+
 def playmovie(video, directory, player):
     """Plays a video."""
     VIDEO_PATH = Path(directory + video)
-    isPlay = isplaying()
+    isPlay = isplaying(player)
 
     if not isPlay:
         logging.info('playmovie: No videos playing, so play video.')
     else:
-    if player.is_playing():
-        logging.info('playmovie: Video already playing, so quit current video, then play')
-        player.stop()
+        if player.is_playing():
+            logging.info('playmovie: Video already playing, so quit current video, then play')
+            player.stop()
 
     try:
         player = Instance().media_player_new()
@@ -30,31 +31,15 @@ def playmovie(video, directory, player):
     logging.info('playmovie: vlc %s' % video)
     return player
 
-
-def isplaying():
-    """Check if vlc is running
-    If the value returned is 1 or 0, vlc is NOT playing a video
-    If the value returned is 2, vlc is playing a video"""
-    processname = 'vlc'
-    tmp = os.popen("ps -Af").read()
-    proccount = tmp.count(processname)
-
-    if proccount == 1 or proccount == 0:
-        proccount = False
-    else:
-        proccount = True
-
-    return proccount
 def isplaying(player):
     """Check if player is playing a video"""
     return player.is_playing()
-
 
 def main():
     # Program start
     directory = '/media/usb/'
     logging.basicConfig(level=logging.DEBUG)
-    reader = SimpleMFRC522()	# Setup reader
+    reader = SimpleMFRC522()    # Setup reader
     logging.info('\n\n\n***** %s Begin Player****\n\n\n' % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
     current_movie_id = 111111222222
     playerOB = Instance().media_player_new()
@@ -101,7 +86,6 @@ def main():
                     isMoviePlaying = True
 
             else:
-                isPlay = isplaying()
                 isPlay = isplaying(playerOB)
 
                 if isPlay:
@@ -118,5 +102,6 @@ def main():
     except KeyboardInterrupt:
         GPIO.cleanup()
         print("\nAll Done")
+
 if __name__ == '__main__':
     main()
